@@ -162,5 +162,53 @@ export async function appRoutes(app: FastifyInstance) {
     
 
   })
+
+  // retornar um resumo contendo uma lista com várias informações como sendo um objeto
+  // cada um desses objetos vai precisar ter a data, quantidade de hábitos eram possíveis
+  // eu completar na data e quantos hábitos eu completei nessa data 
+  app.get('/summary', async () => {
+    // quando temos query mais complexas, com mais condições e relacionamentos
+    // geralmente vamos precisar escrever o SQL na mão nesses casos
+    // já que isso traz mais benefícios, como otimização e performance
+    // também temos que tomar cuidado, pois quando escrevemos RAW SQL
+    // os comandos só vão funcionar para aquele banco de dados
+
+    const summary = await prisma.$queryRaw`
+      SELECT 
+        D.id, 
+        D.date,
+        -- pegando quantos hábitos a pessoa completou naquele dia
+        -- utilizar subquerys, basicamente utilizar um SELECT dentro de outro SELECT
+        (
+          SELECT 
+          -- transformamos em float pois o count(*) retorna um big int
+            cast(count(*) as float)
+          FROM day_habits DH
+          WHERE DH.day_id = D.id
+          -- mostrar como completed no retorno
+        ) as completed,
+        -- subquery para retornar o amount
+        -- total de hábitos disponíveis naquela data específica  
+        (
+          SELECT
+            cast(count(*) as float)
+          FROM habit_week_days HWD
+          -- mostrando só os hábitos criados nos dias anteriores a data
+          JOIN habits H
+            ON H.id = HWD.habit_id
+          WHERE
+          -- formatando uma data em um formato específico
+          -- dividimos por 1000 pois o formato do SQLite de data (epoch timestamp)
+          -- trabalha com milissegundos
+            HWD.week_day = cast(strftime('%w', D.date/1000.0, 'unixepoch') as int)
+            -- validando se o hábito foi criado antes ou no mesmo dia que a data
+            AND H.created_at <= D.date
+        ) as amount
+      FROM days D
+    `
+
+    return summary
+
+  })
 }
 
