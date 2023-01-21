@@ -99,5 +99,68 @@ export async function appRoutes(app: FastifyInstance) {
 
   })
 
+  // rota de completar /não completar um hábito
+  // usamos patch pois só vamos mudar 1 informação
+  // :id => é uma route param => parâmetro de indetificação
+  app.patch('/habits/:id/toggle', async (request) => {
+    
+    const toggleHabitParams = z.object({
+      id: z.string().uuid(),
+    }) 
+
+    const {id} = toggleHabitParams.parse(request.params)
+
+    // só vamos poder um hábito no mesmo dia
+    // startOf => descarta as informações como hora, minuto etc.
+    const today = dayjs().startOf('day').toDate()
+
+    let day = await prisma.day.findUnique({
+      where: {
+        date: today
+      }
+    })
+
+    // se o dia não estiver no banco de dados, usuário não completou nenhum hábito
+    if (!day) {
+      day = await prisma.day.create({
+        data: {
+          date: today,
+        }
+      })
+    }
+
+    const dayHabit = await prisma.dayHabit.findUnique({
+      // buscando um registro no banco de dados na tabela dayHabits para ver se o usuário
+      // já tinha marcado o hábito como completo no dia atual
+      where: {
+        day_id_habit_id: {
+          day_id: day.id,
+          habit_id: id
+        }
+      }
+    })
+
+    // caso o hábito estiver marcado como completo
+    if (dayHabit) {
+      //remover marcação de completo
+      await prisma.dayHabit.delete({
+        where: {
+          id: dayHabit.id
+        }
+      })
+    } else {
+      // completar o hábito no dia atual
+      await prisma.dayHabit.create({
+        data: {
+          day_id: day.id,
+          // id vem da rota
+          habit_id: id,
+        }
+      })
+    }
+
+    
+
+  })
 }
 
