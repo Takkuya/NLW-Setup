@@ -9,7 +9,7 @@ import {
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter'
 import { Loading } from './src/components/Loading'
-import { Home } from './src/screens/Home'
+import { Routes } from './src/routes'
 
 export default function App() {
   // fontsLoaded => fala se as fontes foram ou não carregadas
@@ -26,7 +26,7 @@ export default function App() {
 
   return (
     <>
-      <Home />
+      <Routes />
       {/* translucent => status bar fica sob a nossa aplicação */}
       <StatusBar
         barStyle="light-content"
