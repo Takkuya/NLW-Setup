@@ -90,7 +90,7 @@ export async function appRoutes(app: FastifyInstance) {
     // se o dia não estiver nulo procurar os dayHabits
     const completedHabits = day?.dayHabits.map(dayHabit => {
       return dayHabit.habit_id
-    })
+    }) ?? []
 
     return {
       possibleHabits,
